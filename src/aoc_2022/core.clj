@@ -2,29 +2,34 @@
   (:gen-class) 
   (:require [clojure.string :as str]))
 
-(defn read-cal-data []
+(defn read-cal-data 
+  []
    (map (fn [elf-cal] (map #(Integer. %)
                        (str/split elf-cal #"\n")))
     (str/split
     (slurp "resources/elve_calories") #"\n\n")))
 
-(defn sum-vector [vect]
+(defn sum-vector 
+  [vect]
   (reduce #(+ %1 %2) 0 vect))
 
-(defn day1 []
+(defn day1 
+  []
   (println (sum-vector 
             (take 3
             (sort > (map sum-vector
                       (read-cal-data)))))))
 
-(defn read-rps-strategy-data []
+(defn read-rps-strategy-data 
+  []
   (map 
    (fn [x] (str/split x #" "))
    (str/split 
     (slurp "resources/rps_strategy") #"\n")))
 
 
-(defn get-score [p1 p2]
+(defn get-score 
+  [p1 p2]
    "A => pierre
    B => papier
    C => siceaux
@@ -55,18 +60,21 @@
                                  :p1 (+ 3 3) :p2 (+ 3 3)}
     :else (throw (Exception. (str "invalid combination: " p1 p2)))))
 
-(defn day2 []
+(defn day2 
+  []
   (println (let [data (read-rps-strategy-data)]
                    (reduce +
                            0 
                            (map #(get (apply get-score %) :p2) data)))))
 
-(defn load-rocksack-items []
+(defn load-rocksack-items 
+  []
    (str/split 
     (slurp "resources/rucksack_items") 
     #"\n"))
 
-(defn get-rocksack-content [sack]
+(defn get-rocksack-content 
+  [sack]
   (let [len (count sack)
         full-sack (map str sack)
         first-half (int (/ len 2))
@@ -77,11 +85,13 @@
 (def item-types 
   (str/split "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" #""))
 
-(defn compute-item-priority [item]
+(defn compute-item-priority 
+  [item]
   (+ 1 
-     (.indexOf item-types item)))
+     (.indexOf item-types (str item))))
 
-(defn get-duplicated-item [items1 items2]
+(defn get-first-duplicated-item 
+  [items1 items2]
   (loop [i 0]
     (let [item (get items1 i)
           size (count items1)]
@@ -91,18 +101,52 @@
         item
         (recur (inc i))))))
 
-(defn get-all-dupl-priorities []
+(defn get-first-dupl-item-in-three 
+  [l1 l2 l3]
+  (loop [i 0]
+    (let [item (get l1 i)
+          size (count l1)]
+      (if (or
+           (and 
+            (some #(= item %) l2)
+            (some #(= item %) l3))
+           (>= i size))
+        (str item)
+        (recur (inc i))))))
+
+(defn get-all-dupl-priorities 
+  []
   (let [items (load-rocksack-items)]
     (map
-     (fn [sack-content]
-       (let [first-comp (get sack-content :first)
+     (fn [raw-content]
+       (let [sack-content (get-rocksack-content raw-content)
+             first-comp (get sack-content :first)
              last-comp (get sack-content :last)]
          (compute-item-priority
-          (get-duplicated-item first-comp last-comp))))
-     (map get-rocksack-content items))))
+          (get-first-duplicated-item first-comp last-comp))))
+     items)))
 
-(defn day3 []
-  (println (reduce + (get-all-dupl-priorities))))
+(defn get-group-of-three 
+  []
+  (let [raw-data (map
+                  #(into [] (map str %))
+                  (load-rocksack-items))]
+    (map 
+     #(into [] %)
+     (partition 3 raw-data))))
+
+(defn compute-groups-priorities
+  []
+  (let [groups (get-group-of-three)]
+        (map 
+         (fn [group]
+           (compute-item-priority
+            (apply get-first-dupl-item-in-three group)))
+         groups)))
+
+(defn day3 
+  []
+  (println (reduce + (compute-groups-priorities))))
 
 (defn -main
   [& args]
