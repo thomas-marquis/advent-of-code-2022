@@ -2,8 +2,6 @@
   (:gen-class) 
   (:require [clojure.string :as str]))
 
-(require '[clojure.string :as str])
-
 (defn read-cal-data []
    (map (fn [elf-cal] (map #(Integer. %)
                        (str/split elf-cal #"\n")))
@@ -27,7 +25,7 @@
 
 
 (defn get-score [p1 p2]
-  "A => pierre
+   "A => pierre
    B => papier
    C => siceaux
    X => p2 loose
@@ -63,6 +61,49 @@
                            0 
                            (map #(get (apply get-score %) :p2) data)))))
 
+(defn load-rocksack-items []
+   (str/split 
+    (slurp "resources/rucksack_items") 
+    #"\n"))
+
+(defn get-rocksack-content [sack]
+  (let [len (count sack)
+        full-sack (map str sack)
+        first-half (int (/ len 2))
+        second-half (- len first-half)]
+    {:first (into [] (take first-half full-sack))
+     :last (into [] (take-last second-half full-sack))}))
+
+(def item-types 
+  (str/split "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" #""))
+
+(defn compute-item-priority [item]
+  (+ 1 
+     (.indexOf item-types item)))
+
+(defn get-duplicated-item [items1 items2]
+  (loop [i 0]
+    (let [item (get items1 i)
+          size (count items1)]
+      (if (or
+           (some #(= item %) items2)
+           (>= i size))
+        item
+        (recur (inc i))))))
+
+(defn get-all-dupl-priorities []
+  (let [items (load-rocksack-items)]
+    (map
+     (fn [sack-content]
+       (let [first-comp (get sack-content :first)
+             last-comp (get sack-content :last)]
+         (compute-item-priority
+          (get-duplicated-item first-comp last-comp))))
+     (map get-rocksack-content items))))
+
+(defn day3 []
+  (println (reduce + (get-all-dupl-priorities))))
+
 (defn -main
   [& args]
-  (day2))
+  (day3))
