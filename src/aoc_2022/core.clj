@@ -80,28 +80,27 @@
          (not= nil crate-to-move)
          (not= (get proc :from)
                (get proc :to)))
-      moved-stacks
+      (doall moved-stacks)
       stacks)))
 
 (defn move-n
-  [stacks proc n]
-  (if (> n 0)
-    (recur
-     (move-one proc stacks)
-     proc
-     (dec n))
-    stacks))
+  ([proc stacks]
+   (move-n proc stacks (get proc :quantity)))
+  ([proc stacks n]
+   (if (> n 0)
+     (recur
+      proc
+      (move-one proc stacks) 
+      (dec n))
+     stacks)))
 
 (defn move
-  [stacks procs idx]
-  (let [proc (get (into [] procs) idx)]
-    (if (= nil proc)
-      stacks
-      (recur (move-n stacks
-                     proc
-                     (get proc :quantity))
-             procs
-             (inc idx)))))
+  ([procs stacks]
+   (let [proc (first procs)]
+     (if (empty? procs)
+       stacks
+       (recur (doall (rest procs))
+              (move-n proc stacks))))))
 
 (defn get-tops
   [crates]
@@ -109,22 +108,27 @@
 
 (defn execute-part-1
   []
-  (let [all-lines (take 320 (load-file-content))
+  (let [all-lines (load-file-content)
         procs-start-index (get-proc-start-index all-lines)
         [crates-lines procs-lines] (split-at procs-start-index all-lines)
         procs (parse-procs procs-lines)
         crates (parse-init-ctrates-stacks
                 (take (- procs-start-index 1) crates-lines))]
     (get-tops 
-     (move crates procs 0))))
+     (move procs crates))))
+
+(defn sum
+  ([vals] (sum vals 0))
+  ([vals accumulating-total]
+   (if (empty? vals)
+     accumulating-total
+     (recur (rest vals) (+ (first vals) accumulating-total)))))
+
+
 
 (defn day5
   []
   (println (execute-part-1)))
-  ;; (println (move-n (list (list "D" "C" "B" "A")
-  ;;                        (list "X"))
-  ;;                  {:from 1 :to 2}
-  ;;                  3)))
 
 (defn -main
   [& args]
