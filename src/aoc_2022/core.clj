@@ -83,6 +83,31 @@
       (doall moved-stacks)
       stacks)))
 
+(defn move-many
+  [proc stacks]
+  ;; (println proc "\t" stacks)
+  (let [nb-to-move (get proc :quantity)
+        stack-from (nth stacks
+                        (- (get proc :from) 1)
+                        (list))
+        crates-to-move (take nb-to-move stack-from)
+        moved-stacks (map-indexed
+                      (fn [idx stack]
+                        (if (= (+ 1 idx) (get proc :from))
+                          (take-last (- (count stack-from) nb-to-move)
+                                     stack)
+                          (if (= (+ 1 idx) (get proc :to))
+                            (conj stack crates-to-move)
+                            stack)))
+                      stacks)]
+    (println proc stacks)
+    (if (and
+         (not-empty crates-to-move)
+         (not= (get proc :from)
+               (get proc :to)))
+      (doall moved-stacks)
+      stacks)))
+
 (defn move-n
   ([proc stacks]
    (move-n proc stacks (get proc :quantity)))
@@ -100,10 +125,11 @@
      (if (empty? procs)
        stacks
        (recur (doall (rest procs))
-              (move-n proc stacks))))))
+              (move-many proc stacks))))))
 
 (defn get-tops
   [crates]
+  ;; (println crates)
   (str/join "" (map #(first %) crates)))
 
 (defn execute-part-1
@@ -116,15 +142,6 @@
                 (take (- procs-start-index 1) crates-lines))]
     (get-tops 
      (move procs crates))))
-
-(defn sum
-  ([vals] (sum vals 0))
-  ([vals accumulating-total]
-   (if (empty? vals)
-     accumulating-total
-     (recur (rest vals) (+ (first vals) accumulating-total)))))
-
-
 
 (defn day5
   []
